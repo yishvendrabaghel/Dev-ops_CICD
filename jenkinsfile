@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build') {
+            steps {
+                sh '''
+                npm install -g live-server      // Install live-server globally
+                npm install                     // Install project dependencies
+                '''
+            }
+        }
+        stage('Code Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                    npm install sonar-scanner --save-dev    // Install SonarQube Scanner
+                    ./node_modules/.bin/sonar-scanner       // Run SonarQube analysis
+                    '''
+                }
+            }
+        }
+        stage('Docker Build & Push') {
+            steps {
+                sh '''
+                docker build -t your-docker-repo/app-name:${BUILD_NUMBER} .
+                docker push your-docker-repo/app-name:${BUILD_NUMBER}
+                '''
+            }
+        }
+    }
+}
